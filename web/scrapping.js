@@ -71,7 +71,8 @@ async function scrapeWebsite() {
                 product_name VARCHAR(255),
                 product_price NUMERIC,
                 product_image TEXT,
-                product_link TEXT
+                product_link TEXT,
+                product_code VARCHAR(255) UNIQUE
             );`;
 
         await pool.query(createQuery);
