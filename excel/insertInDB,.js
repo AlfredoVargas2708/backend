@@ -21,7 +21,6 @@ async function insertCodes(filePath) {
         });
 
         let productsFound = [];
-        let productsNotFound = [];
 
         for (const product of productsCodes) {
             const existingProduct = existingProducts.rows.find(p => p.product_name === product.nombre);
@@ -31,15 +30,18 @@ async function insertCodes(filePath) {
                     nombre: product.nombre,
                     id: existingProduct.id
                 });
-            }else {
-                productsNotFound.push({
-                    codigobarra: product.codigobarra,
-                    nombre: product.nombre,
-                });
             }
         }
-        
 
+        if (productsFound.length === 0) {
+            console.log('No matching products found in the database.');
+            return;
+        }
+
+        const updatePromises = productsFound.map(product => {
+            return pool.query('UPDATE products SET product_code = $1 WHERE id = $2', [product.codigobarra, product.id]);
+        });
+        await Promise.all(updatePromises);
     } catch (error) {
         console.error('Error inserting codes into the database:', error);
     }
