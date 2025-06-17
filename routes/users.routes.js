@@ -5,6 +5,7 @@ const { UserController } = require('../controllers/index')
 let UserCtrl = new UserController();
 
 router.post('/login', UserCtrl.Login);
+router.post('/signup', UserCtrl.SignUp);
 router.post('/reset-password', UserCtrl.ResetPassword);
 
 module.exports = router;
