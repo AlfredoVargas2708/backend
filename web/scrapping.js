@@ -45,6 +45,9 @@ async function scrapeWebsite() {
             }
         }
 
+        const dropTableQuery = 'DROP TABLE IF EXISTS products';
+        await pool.query(dropTableQuery);
+
         const createTableQuery = `
             CREATE TABLE IF NOT EXISTS products (
                 id SERIAL PRIMARY KEY,
@@ -52,7 +55,8 @@ async function scrapeWebsite() {
                 product_price INTEGER NOT NULL,
                 product_image TEXT NOT NULL,
                 product_link TEXT,
-                product_code VARCHAR(13)
+                product_code VARCHAR(13),
+                is_weighable BOOLEAN
             );`;
 
         await pool.query(createTableQuery);
