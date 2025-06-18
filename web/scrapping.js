@@ -15,9 +15,9 @@ async function scrapeWebsite() {
         const { window: { document } } = new jsdom.JSDOM(content);
 
         const totalPages = parseInt(document.querySelector('.pagination__text')?.textContent.trim().split(' ')[3]) || 1;
-        
+
         const products = [];
-        
+
         if (totalPages > 1) {
             for (let i = 1; i <= totalPages; i++) {
                 await page.goto(`${baseUrl}?page=${i}`, { waitUntil: 'domcontentloaded' });
@@ -45,9 +45,10 @@ async function scrapeWebsite() {
             }
         }
 
-        if (products.length > 0) {
-            const selectQuery = 'SELECT * FROM products';
-            const existingProducts = await pool.query(selectQuery);
+        const selectQuery = 'SELECT * FROM products';
+        const existingProducts = await pool.query(selectQuery);
+
+        if (products.length > 0 && products.length >= existingProducts.rows.length) {
 
             const existingProductNames = new Set(existingProducts.rows.map(p => p.product_name));
             const newProducts = products.filter(p => !existingProductNames.has(p.name));
@@ -59,14 +60,32 @@ async function scrapeWebsite() {
 
                 for (const product of newProducts) {
                     const values = [product.name, product.price, product.image, product.link];
-                    const result = await pool.query(insertQuery, values);
+                    await pool.query(insertQuery, values);
                 }
 
                 console.log(`${newProducts.length} new products inserted into the database.`);
-            } else {
-                console.log('No new products to insert.');
             }
+        } else if (products.length > 0 && products.length < existingProducts.rows.length) {
+            // Obtener solo los nombres de los productos desde la web
+            const webProductNames = products.map(p => p.name);
+
+            // Generar placeholders ($1, $2, ...) dinámicamente
+            const placeholders = webProductNames.map((_, index) => `$${index + 1}`).join(', ');
+
+            // Consulta para eliminar los productos que NO están en la lista actual de la web
+            const deleteQuery = `
+            DELETE FROM products
+            WHERE product_name NOT IN (${placeholders})`;
+
+            await pool.query(deleteQuery, webProductNames);
+        } else if (products.length === 0) {
+            console.log('No products found on the website.');
+        } else if (existingProducts.rows.length === 0) {
+            console.log('No products found in the database.');
+        } else if (products.length === existingProducts.rows.length) {
+            console.log('No new products to insert, all products are already in the database.');
         }
+
 
         await browser.close();
     } catch (error) {
