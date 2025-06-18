@@ -1,6 +1,6 @@
 const pool = require('../database/config.db');
 const bcrypt = require('bcrypt');
-const sendConfirmationEmail = require('../emails/sendConfirmation');
+const { sendConfirmationEmail, VerifyEmail } = require('../emails/sendConfirmation');
 
 class UserController {
     async Login(req, res) {
@@ -55,6 +55,28 @@ class UserController {
         }
     }
 
+    async ConfirmEmail(req, res) {
+        try {
+            const { email } = req.params;
+
+            const userExists = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+            if (userExists.rows.length === 0) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            const user = userExists.rows[0];
+            if (user.is_verified) {
+                return res.status(400).json({ message: 'Email already verified' });
+            }
+
+            await pool.query('UPDATE users SET is_verified = $1 WHERE email = $2', [true, email]);
+            res.status(200).json({ message: 'Email confirmed successfully' });
+        } catch (error) {
+            console.error('Error confirming email:', error);
+            res.status(500).json({ message: 'Internal server error' });
+        }
+    }
+
     async ResetPassword(req, res) {
         try {
             const { email, password, confirmPassword } = req.body;
@@ -75,6 +97,16 @@ class UserController {
         } catch (error) {
             console.error('Error resetting password:', error);
             res.status(500).json({ message: 'Internal server error' });
+        }
+    }
+
+    async VerifyEmail(req, res) {
+        const { email } = req.params;
+        try {
+            await VerifyEmail(email);
+            res.send('<h1>Email verificado con éxito</h1>');
+        } catch (error) {
+            res.status(400).send('<h1>Error al verificar el email</h1>');
         }
     }
 }

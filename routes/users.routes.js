@@ -6,6 +6,9 @@ let UserCtrl = new UserController();
 
 router.post('/login', UserCtrl.Login);
 router.post('/signup', UserCtrl.SignUp);
+router.get('/confirm-email/:email', UserCtrl.ConfirmEmail);
 router.post('/reset-password', UserCtrl.ResetPassword);
+router.get('/verify-email/:email', UserCtrl.VerifyEmail);
+
 
 module.exports = router;

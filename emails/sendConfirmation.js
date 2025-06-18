@@ -19,7 +19,7 @@ async function sendConfirmationEmail(email) {
         from: 'Alogar <noreply@alogar.com>',
         to: email,
         subject: 'Email Confirmation',
-        html: htmlTemplate.replace('{{nombre}}', email).replace('{{url_confirmacion}}', 'http://localhost:4200/confirm-email')
+        html: htmlTemplate.replace('{{nombre}}', email).replace('{{url_confirmacion}}', `http://localhost:4200/confirm-email/${email}`)
     };
 
     try {
@@ -30,4 +30,4 @@ async function sendConfirmationEmail(email) {
     }
 }
 
-module.exports = sendConfirmationEmail;
+module.exports = { sendConfirmationEmail };
