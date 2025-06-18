@@ -110,21 +110,6 @@ class UserController {
             res.status(500).json({ exists: false });
         }
     }
-
-    async CheckEmailVerified(req, res) {
-        const { email } = req.params;
-        try {
-            const result = await pool.query('SELECT is_verified FROM users WHERE email = $1', [email]);
-            if (result.rows.length > 0) {
-                res.json({ is_verified: result.rows[0].is_verified });
-            } else {
-                res.status(404).json({ message: 'User not found' });
-            }
-        } catch (err) {
-            console.error(err);
-            res.status(500).json({ is_verified: false });
-        }
-    }
 }
 
 module.exports = UserController;
