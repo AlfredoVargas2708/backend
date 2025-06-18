@@ -45,22 +45,6 @@ async function scrapeWebsite() {
             }
         }
 
-        const dropTableQuery = 'DROP TABLE IF EXISTS products';
-        await pool.query(dropTableQuery);
-
-        const createTableQuery = `
-            CREATE TABLE IF NOT EXISTS products (
-                id SERIAL PRIMARY KEY,
-                product_name VARCHAR(255) NOT NULL,
-                product_price INTEGER NOT NULL,
-                product_image TEXT NOT NULL,
-                product_link TEXT,
-                product_code VARCHAR(13),
-                is_weighable BOOLEAN
-            );`;
-
-        await pool.query(createTableQuery);
-
         if (products.length > 0) {
             const selectQuery = 'SELECT * FROM products';
             const existingProducts = await pool.query(selectQuery);
