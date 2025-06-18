@@ -1,6 +1,6 @@
 const pool = require('../database/config.db');
 const bcrypt = require('bcrypt');
-const { sendConfirmationEmail, VerifyEmail } = require('../emails/sendConfirmation');
+const { sendConfirmationEmail } = require('../emails/sendConfirmation');
 
 class UserController {
     async Login(req, res) {
@@ -97,16 +97,6 @@ class UserController {
         } catch (error) {
             console.error('Error resetting password:', error);
             res.status(500).json({ message: 'Internal server error' });
-        }
-    }
-
-    async VerifyEmail(req, res) {
-        const { email } = req.params;
-        try {
-            await VerifyEmail(email);
-            res.send('<h1>Email verificado con éxito</h1>');
-        } catch (error) {
-            res.status(400).send('<h1>Error al verificar el email</h1>');
         }
     }
 

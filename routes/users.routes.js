@@ -9,8 +9,7 @@ router.post('/signup', UserCtrl.SignUp);
 router.get('/confirm-email/:email', UserCtrl.ConfirmEmail);
 router.get('/check-email/:email', UserCtrl.CheckEmail);
 router.get('/check-email-verified/:email', UserCtrl.CheckEmailVerified);
-router.post('/reset-password', UserCtrl.ResetPassword);
-router.get('/verify-email/:email', UserCtrl.VerifyEmail);
+router.post('/reset-password', UserCtrl.ResetPassword);;
 
 
 module.exports = router;
