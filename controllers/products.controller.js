@@ -26,6 +26,31 @@ class ProductsController {
         }
     }
 
+    async updateProduct(req, res) {
+        try {
+            const { id } = req.params;
+            const { productName, productPrice, productImage, productLink } = req.body;
+
+            if (!id || !productName || !productPrice || !productImage || !productLink) {
+                return res.status(400).json({ error: 'All fields are required' });
+            }
+
+            const query = `UPDATE products
+                           SET product_name = $1, product_price = $2, product_image = $3, product_link = $4
+                           WHERE product_id = $5`;
+            const values = [productName, productPrice, productImage, productLink, id];
+            const result = await pool.query(query, values);
+
+            if (result.rowCount === 0) {
+                return res.status(404).json({ error: 'Product not found' });
+            }
+            res.status(200).json({ message: 'Product updated successfully' });
+        } catch (error) {
+            console.error('Error in updateProduct:', error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
+    }
+
     async getProductByCode(req, res) {
         try {
             const { code } = req.params;
@@ -70,7 +95,8 @@ class ProductsController {
 
                 // Consulta para los productos (con ordenación)
                 const productsQuery = `
-                SELECT * FROM products 
+                SELECT * FROM products
+                ORDER BY product_id ASC 
                 LIMIT $1 OFFSET $2
             `;
                 const productsResult = await client.query(productsQuery, [limit, offset]);
