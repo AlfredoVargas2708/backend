@@ -2,23 +2,45 @@ const pool = require('../database/config.db')
 
 class ProductsController {
 
-    getProductByCode(req, res) {
+    async addProduct(req, res) {
+        try {
+            const { productName, productPrice, productImage, productLink }  = req.body;
+
+            if (!productName || !productPrice || !productImage || !productLink) {
+                return res.status(400).json({ error: 'All fields are required' });
+            }
+
+            const query = `INSERT INTO products (product_name, product_price, product_image, product_link) 
+                           VALUES ($1, $2, $3, $4)
+                           RETURNING *`;
+            const values = [productName, productPrice, productImage, productLink];
+            const result = await pool.query(query, values);
+
+            if (result.rows.length === 0) {
+                return res.status(500).json({ error: 'Failed to add product' });
+            }
+            res.status(201).json({ data: result.rows[0] });
+        } catch (error) {
+            console.error('Error in addProduct:', error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
+    }
+
+    async getProductByCode(req, res) {
         try {
             const { code } = req.params;
 
-            const query = 'SELECT * FROM products WHERE product_code = $1 LIMIT 10 OFFSET 0';
-            pool.query(query, [code], (error, result) => {
-                if (error) {
-                    console.error('Error executing query:', error);
-                    return res.status(500).json({ error: 'Internal Server Error' });
-                }
+            if (!code) {
+                return res.status(400).json({ error: 'Product code is required' });
+            }
 
-                if (result.rows.length === 0) {
-                    return res.status(404).json({ message: 'Product not found' });
-                }
+            const query = `SELECT * FROM products WHERE product_code = $1`;
+            const result = await pool.query(query, [code]);
 
-                res.status(200).json(result.rows[0]);
-            });
+            if (result.rows.length === 0) {
+                return res.status(404).json({ error: 'Product not found' });
+            }
+            res.status(200).json({ data: result.rows[0] });
         } catch (error) {
             console.error('Error in getProductByCode:', error);
             res.status(500).json({ error: 'Internal Server Error' });

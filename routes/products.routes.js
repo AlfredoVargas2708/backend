@@ -6,5 +6,6 @@ const ProdCtrl = new ProductsController();
 
 router.get('/:code', ProdCtrl.getProductByCode);
 router.get('/', ProdCtrl.getAllProducts);
+router.post('/', ProdCtrl.addProduct);
 
 module.exports = router;
