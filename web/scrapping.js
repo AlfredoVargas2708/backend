@@ -45,8 +45,19 @@ async function scrapeWebsite() {
             }
         }
 
-        const selectQuery = 'SELECT * FROM products';
-        const existingProducts = await pool.query(selectQuery);
+        const createTableQuery = `
+            CREATE TABLE IF NOT EXISTS products (
+                product_id SERIAL PRIMARY KEY,
+                product_name VARCHAR(255) NOT NULL,
+                product_price INTEGER NOT NULL,
+                product_image VARCHAR(255) NOT NULL,
+                product_link VARCHAR(255) NOT NULL
+            )`;
+
+        await pool.query(createTableQuery);
+
+        const selectProductsQuery = 'SELECT * FROM products';
+        const existingProducts = await pool.query(selectProductsQuery);
 
         if (products.length > 0 && products.length >= existingProducts.rows.length) {
 
@@ -66,13 +77,10 @@ async function scrapeWebsite() {
                 console.log(`${newProducts.length} new products inserted into the database.`);
             }
         } else if (products.length > 0 && products.length < existingProducts.rows.length) {
-            // Obtener solo los nombres de los productos desde la web
             const webProductNames = products.map(p => p.name);
 
-            // Generar placeholders ($1, $2, ...) dinámicamente
             const placeholders = webProductNames.map((_, index) => `$${index + 1}`).join(', ');
 
-            // Consulta para eliminar los productos que NO están en la lista actual de la web
             const deleteQuery = `
             DELETE FROM products
             WHERE product_name NOT IN (${placeholders})`;
