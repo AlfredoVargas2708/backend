@@ -2,6 +2,63 @@ const pool = require('../database/config.db')
 
 class ProductsController {
 
+async filterProducts(req, res) {
+    try {
+        const { search, minValue, maxValue, page, pageSize } = req.query;
+
+        const limit = parseInt(pageSize, 10) || 10;
+        const offset = ((parseInt(page, 10) || 1) - 1) * limit;
+
+        if (limit < 1 || offset < 0) {
+            return res.status(400).json({ error: 'Invalid pagination parameters' });
+        }
+
+        let query = `SELECT * FROM products WHERE 1=1`;
+        let countQuery = 'SELECT COUNT(*) FROM products WHERE 1=1';
+        const values = [];
+        let paramCount = 0;
+
+        if (search && search.trim() !== '') {
+            query += ` AND product_name ILIKE $${++paramCount}`;
+            countQuery += ` AND product_name ILIKE $${paramCount}`;
+            values.push(`%${search}%`);
+        }
+
+        if (minValue && maxValue) {
+            const min = parseFloat(minValue);
+            const max = parseFloat(maxValue);
+            if (!isNaN(min) && !isNaN(max)) {
+                query += ` AND product_price BETWEEN $${++paramCount} AND $${++paramCount}`;
+                countQuery += ` AND product_price BETWEEN $${paramCount-1} AND $${paramCount}`;
+                values.push(min, max);
+            }
+        }
+
+        // Clone values array for count query
+        const countValues = [...values];
+
+        // Add pagination to main query only
+        query += ` ORDER BY product_id ASC LIMIT $${++paramCount} OFFSET $${++paramCount}`;
+        values.push(limit, offset);
+
+        const result = await pool.query(query, values);
+        const countResult = await pool.query(countQuery, countValues);
+        
+        res.status(200).json({
+            data: result.rows,
+            pagination: {
+                total: parseInt(countResult.rows[0].count, 10),
+                page: parseInt(page, 10) || 1,
+                pageSize: limit,
+                totalPages: Math.ceil(parseInt(countResult.rows[0].count, 10) / limit)
+            }
+        });
+    } catch (error) {
+        console.error('Error in filterProducts:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+}
+
     async addProduct(req, res) {
         try {
             const { productName, productPrice, productImage, productLink }  = req.body;

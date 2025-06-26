@@ -8,5 +8,6 @@ router.get('/:code', ProdCtrl.getProductByCode);
 router.get('/', ProdCtrl.getAllProducts);
 router.post('/', ProdCtrl.addProduct);
 router.put('/:id', ProdCtrl.updateProduct);
+router.get('/filter/search', ProdCtrl.filterProducts);
 
 module.exports = router;
