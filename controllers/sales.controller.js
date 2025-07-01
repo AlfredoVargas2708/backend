@@ -48,6 +48,27 @@ class SalesController {
             res.status(500).json({ error: 'Internal Server Error' });
         }
     }
+
+    async getSalesByMonth(req, res) {
+        try {
+            const query = `
+                SELECT 
+                    TO_CHAR(fecha_venta, 'YYYY-MM') AS mes,
+                    SUM(total) AS total
+                FROM 
+                    sales
+                GROUP BY 
+                    TO_CHAR(fecha_venta, 'YYYY-MM')
+                ORDER BY 
+                    mes;
+            `;
+            const result = await pool.query(query);
+            res.json(result.rows);
+        } catch (error) {
+            console.error('Error fetching sales:', error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
+    }
 }
 
 module.exports = SalesController;

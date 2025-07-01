@@ -5,6 +5,7 @@ const { SalesController } = require('../controllers/index');
 const SaleCtrl = new SalesController();
 
 router.get('/count', SaleCtrl.getSalesCount);
+router.get('/', SaleCtrl.getSalesByMonth);
 router.post('/', SaleCtrl.createSale);
 
 module.exports = router;
