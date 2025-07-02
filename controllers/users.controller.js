@@ -42,8 +42,8 @@ class UserController {
 
             const hashedPassword = await bcrypt.hash(password, 10);
             const newUser = await pool.query(
-                'INSERT INTO users (email, password, role) VALUES ($1, $2, $3) RETURNING *',
-                [email, hashedPassword, role]
+                'INSERT INTO users (email, password, isAdmin) VALUES ($1, $2, $3) RETURNING *',
+                [email, hashedPassword, role === 'admin' ? true : false]
             );
 
             await sendConfirmationEmail(email);

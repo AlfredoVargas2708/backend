@@ -75,6 +75,7 @@ class SalesController {
             const query = `
                 SELECT 
                     p.product_name,
+                    sp.price,
                     TO_CHAR(s.fecha_venta, 'YYYY-MM') AS mes,
                     SUM(sp.cant) AS total_vendido
                 FROM 
@@ -84,7 +85,8 @@ class SalesController {
                 JOIN 
                     products p ON sp.product_id = p.product_id
                 GROUP BY 
-                    p.product_name, TO_CHAR(s.fecha_venta, 'YYYY-MM')
+                    p.product_name, TO_CHAR(s.fecha_venta, 'YYYY-MM'),
+                    sp.price
                 ORDER BY 
                     mes, p.product_name;
             `;
