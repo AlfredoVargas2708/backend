@@ -53,12 +53,12 @@ class SalesController {
         try {
             const query = `
                 SELECT 
-                    TO_CHAR(fecha_venta, 'YYYY-MM') AS mes,
+                    TO_CHAR(fecha_venta, 'MM-YYYY') AS mes,
                     SUM(total) AS total
                 FROM 
                     sales
                 GROUP BY 
-                    TO_CHAR(fecha_venta, 'YYYY-MM')
+                    TO_CHAR(fecha_venta, 'MM-YYYY')
                 ORDER BY 
                     mes;
             `;
@@ -66,6 +66,32 @@ class SalesController {
             res.json(result.rows);
         } catch (error) {
             console.error('Error fetching sales:', error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
+    }
+
+    async getProductsSalesByMonth(req, res) {
+        try {
+            const query = `
+                SELECT 
+                    p.product_name,
+                    TO_CHAR(s.fecha_venta, 'YYYY-MM') AS mes,
+                    SUM(sp.cant) AS total_vendido
+                FROM 
+                    sales s
+                JOIN 
+                    sales_products sp ON s.id = sp.sale_id
+                JOIN 
+                    products p ON sp.product_id = p.product_id
+                GROUP BY 
+                    p.product_name, TO_CHAR(s.fecha_venta, 'YYYY-MM')
+                ORDER BY 
+                    mes, p.product_name;
+            `;
+            const result = await pool.query(query);
+            res.json(result.rows);
+        } catch (error) {
+            console.error('Error fetching product sales by month:', error);
             res.status(500).json({ error: 'Internal Server Error' });
         }
     }

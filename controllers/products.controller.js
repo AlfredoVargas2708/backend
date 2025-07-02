@@ -108,6 +108,21 @@ async filterProducts(req, res) {
         }
     }
 
+    async getCountProducts(req, res) {
+        try {
+            const query = 'SELECT COUNT(*) AS count FROM products';
+            const result = await pool.query(query);
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ error: 'No products found' });
+            }
+            res.status(200).json({ count: parseInt(result.rows[0].count, 10) });
+        } catch (error) {
+            console.error('Error in getCountProducts:', error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
+    }
+
     async getProductByCode(req, res) {
         try {
             const { code } = req.params;
