@@ -5,6 +5,7 @@ const { ProductsController } = require('../controllers');
 const ProdCtrl = new ProductsController();
 
 router.get('/search/:code', ProdCtrl.getProductByCode);
+router.get('/search/name/:name', ProdCtrl.getProductByName);
 router.get('/', ProdCtrl.getAllProducts);
 router.get('/count', ProdCtrl.getCountProducts);
 router.post('/', ProdCtrl.addProduct);

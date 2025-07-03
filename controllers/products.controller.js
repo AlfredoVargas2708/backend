@@ -2,66 +2,66 @@ const pool = require('../database/config.db')
 
 class ProductsController {
 
-async filterProducts(req, res) {
-    try {
-        const { search, minValue, maxValue, page, pageSize } = req.query;
+    async filterProducts(req, res) {
+        try {
+            const { search, minValue, maxValue, page, pageSize } = req.query;
 
-        const limit = parseInt(pageSize, 10) || 10;
-        const offset = ((parseInt(page, 10) || 1) - 1) * limit;
+            const limit = parseInt(pageSize, 10) || 10;
+            const offset = ((parseInt(page, 10) || 1) - 1) * limit;
 
-        if (limit < 1 || offset < 0) {
-            return res.status(400).json({ error: 'Invalid pagination parameters' });
-        }
-
-        let query = `SELECT * FROM products WHERE 1=1`;
-        let countQuery = 'SELECT COUNT(*) FROM products WHERE 1=1';
-        const values = [];
-        let paramCount = 0;
-
-        if (search && search.trim() !== '') {
-            query += ` AND product_name ILIKE $${++paramCount}`;
-            countQuery += ` AND product_name ILIKE $${paramCount}`;
-            values.push(`%${search}%`);
-        }
-
-        if (minValue && maxValue) {
-            const min = parseFloat(minValue);
-            const max = parseFloat(maxValue);
-            if (!isNaN(min) && !isNaN(max)) {
-                query += ` AND product_price BETWEEN $${++paramCount} AND $${++paramCount}`;
-                countQuery += ` AND product_price BETWEEN $${paramCount-1} AND $${paramCount}`;
-                values.push(min, max);
+            if (limit < 1 || offset < 0) {
+                return res.status(400).json({ error: 'Invalid pagination parameters' });
             }
-        }
 
-        // Clone values array for count query
-        const countValues = [...values];
+            let query = `SELECT * FROM products WHERE 1=1`;
+            let countQuery = 'SELECT COUNT(*) FROM products WHERE 1=1';
+            const values = [];
+            let paramCount = 0;
 
-        // Add pagination to main query only
-        query += ` ORDER BY product_id ASC LIMIT $${++paramCount} OFFSET $${++paramCount}`;
-        values.push(limit, offset);
-
-        const result = await pool.query(query, values);
-        const countResult = await pool.query(countQuery, countValues);
-        
-        res.status(200).json({
-            data: result.rows,
-            pagination: {
-                total: parseInt(countResult.rows[0].count, 10),
-                page: parseInt(page, 10) || 1,
-                pageSize: limit,
-                totalPages: Math.ceil(parseInt(countResult.rows[0].count, 10) / limit)
+            if (search && search.trim() !== '') {
+                query += ` AND product_name ILIKE $${++paramCount}`;
+                countQuery += ` AND product_name ILIKE $${paramCount}`;
+                values.push(`%${search}%`);
             }
-        });
-    } catch (error) {
-        console.error('Error in filterProducts:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+
+            if (minValue && maxValue) {
+                const min = parseFloat(minValue);
+                const max = parseFloat(maxValue);
+                if (!isNaN(min) && !isNaN(max)) {
+                    query += ` AND product_price BETWEEN $${++paramCount} AND $${++paramCount}`;
+                    countQuery += ` AND product_price BETWEEN $${paramCount - 1} AND $${paramCount}`;
+                    values.push(min, max);
+                }
+            }
+
+            // Clone values array for count query
+            const countValues = [...values];
+
+            // Add pagination to main query only
+            query += ` ORDER BY product_id ASC LIMIT $${++paramCount} OFFSET $${++paramCount}`;
+            values.push(limit, offset);
+
+            const result = await pool.query(query, values);
+            const countResult = await pool.query(countQuery, countValues);
+
+            res.status(200).json({
+                data: result.rows,
+                pagination: {
+                    total: parseInt(countResult.rows[0].count, 10),
+                    page: parseInt(page, 10) || 1,
+                    pageSize: limit,
+                    totalPages: Math.ceil(parseInt(countResult.rows[0].count, 10) / limit)
+                }
+            });
+        } catch (error) {
+            console.error('Error in filterProducts:', error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
     }
-}
 
     async addProduct(req, res) {
         try {
-            const { productName, productPrice, productImage, productLink }  = req.body;
+            const { productName, productPrice, productImage, productLink } = req.body;
 
             if (!productName || !productPrice || !productImage || !productLink) {
                 return res.status(400).json({ error: 'All fields are required' });
@@ -137,9 +137,30 @@ async filterProducts(req, res) {
             if (result.rows.length === 0) {
                 return res.status(404).json({ error: 'Product not found' });
             }
-            res.status(200).json( result.rows[0] );
+            res.status(200).json(result.rows[0]);
         } catch (error) {
             console.error('Error in getProductByCode:', error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
+    }
+
+    async getProductByName(req, res) {
+        try {
+            const { name } = req.params;
+
+            if (!name) {
+                return res.status(400).json({ error: 'Product name is required' });
+            }
+
+            const query = `SELECT * FROM products WHERE product_name ILIKE $1 ORDER BY product_id ASC`;
+            const result = await pool.query(query, [`%${name}%`]);
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ error: 'Product not found' });
+            }
+            res.status(200).json(result.rows);
+        } catch (error) {
+            console.error('Error in getProductByName:', error);
             res.status(500).json({ error: 'Internal Server Error' });
         }
     }
@@ -167,9 +188,23 @@ async filterProducts(req, res) {
 
                 // Consulta para los productos (con ordenación)
                 const productsQuery = `
-                SELECT * FROM products
-                ORDER BY product_id ASC 
-                LIMIT $1 OFFSET $2
+                    SELECT
+                        p.product_id,
+                        p.product_name,
+                        p.product_price,
+                        p.product_image,
+                        p.product_link,
+                        p.product_code,
+                        SUM(sp.cant) AS total_sold
+                    FROM
+                        products p
+                    LEFT JOIN
+                        sales_products sp ON p.product_id = sp.product_id
+                    GROUP BY
+                        p.product_id, p.product_name, p.product_price, p.product_image, p.product_link, p.product_code
+                    ORDER BY
+                        p.product_id ASC
+                    LIMIT $1 OFFSET $2
             `;
                 const productsResult = await client.query(productsQuery, [limit, offset]);
 
@@ -183,16 +218,14 @@ async filterProducts(req, res) {
                 const totalPages = Math.ceil(totalProducts / limit);
 
                 res.status(200).json({
-                    data: {
-                        products: productsResult.rows,
-                        pagination: {
-                            currentPage: page,
-                            itemsPerPage: limit,
-                            totalItems: totalProducts,
-                            totalPages: totalPages,
-                            hasNextPage: page < totalPages,
-                            hasPrevPage: page > 1
-                        }
+                    products: productsResult.rows,
+                    pagination: {
+                        currentPage: page,
+                        itemsPerPage: limit,
+                        totalItems: totalProducts,
+                        totalPages: totalPages,
+                        hasNextPage: page < totalPages,
+                        hasPrevPage: page > 1
                     }
                 });
             } catch (error) {
