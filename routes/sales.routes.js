@@ -6,7 +6,7 @@ const SaleCtrl = new SalesController();
 
 router.get('/count', SaleCtrl.getSalesCount);
 router.get('/', SaleCtrl.getSalesByMonth);
-router.get('/products', SaleCtrl.getProductsSalesByMonth);
+router.get('/products', SaleCtrl.getProductsSalesInMonth);
 router.post('/', SaleCtrl.createSale);
 
 module.exports = router;

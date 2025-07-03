@@ -51,18 +51,26 @@ class SalesController {
 
     async getSalesByMonth(req, res) {
         try {
+            const { startDate, endDate } = req.query;
+
+            if (!startDate || !endDate) {
+                return res.status(400).json({ error: 'Start date and end date are required' });
+            }
+
             const query = `
                 SELECT 
-                    TO_CHAR(fecha_venta, 'MM-YYYY') AS mes,
-                    SUM(total) AS total
+                    TO_CHAR(fecha_venta, 'DD-MM') AS sale_date,
+                    COUNT(*) AS sales_count
                 FROM 
                     sales
+                WHERE 
+                    fecha_venta >= $1 AND fecha_venta <= $2
                 GROUP BY 
-                    TO_CHAR(fecha_venta, 'MM-YYYY')
+                    sale_date
                 ORDER BY 
-                    mes;
+                    sale_date ASC
             `;
-            const result = await pool.query(query);
+            const result = await pool.query(query, [startDate, endDate]);
             res.json(result.rows);
         } catch (error) {
             console.error('Error fetching sales:', error);
@@ -70,30 +78,36 @@ class SalesController {
         }
     }
 
-    async getProductsSalesByMonth(req, res) {
+    async getProductsSalesInMonth(req, res) {
         try {
+            const { startDate, endDate } = req.query;
+            if (!startDate || !endDate) {
+                return res.status(400).json({ error: 'Start date and end date are required' });
+            }
+
             const query = `
                 SELECT 
-                    p.product_name,
-                    sp.price,
-                    TO_CHAR(s.fecha_venta, 'YYYY-MM') AS mes,
-                    SUM(sp.cant) AS total_vendido
+                    p.product_id AS product_id,
+                    p.product_name AS product_name,
+                    SUM(sp.cant) AS total_quantity,
+                    SUM(sp.price * sp.cant) AS total_sales
                 FROM 
-                    sales s
+                    sales_products sp
                 JOIN 
-                    sales_products sp ON s.id = sp.sale_id
+                    sales s ON sp.sale_id = s.id
                 JOIN 
                     products p ON sp.product_id = p.product_id
+                WHERE 
+                    s.fecha_venta >= $1 AND s.fecha_venta <= $2
                 GROUP BY 
-                    p.product_name, TO_CHAR(s.fecha_venta, 'YYYY-MM'),
-                    sp.price
+                    p.product_id, p.product_name
                 ORDER BY 
-                    mes, p.product_name;
+                    total_sales DESC;
             `;
-            const result = await pool.query(query);
+            const result = await pool.query(query, [startDate, endDate]);
             res.json(result.rows);
         } catch (error) {
-            console.error('Error fetching product sales by month:', error);
+            console.error('Error fetching product sales in month:', error);
             res.status(500).json({ error: 'Internal Server Error' });
         }
     }
